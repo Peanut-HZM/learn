@@ -1,0 +1,69 @@
+#项目基本信息配置
+server:
+  port: 8080
+  servlet:
+    context-path: /helloWorld
+  tomcat:
+    uri-encoding: utf-8
+
+#spring集成组件配置
+spring:
+  datasource:
+    druid:
+      url: jdbc:oracle:thin:@localhost:1521:orcl
+      username: peanut
+      password: Peanut#1234
+      driver-class-name: oracle.jdbc.driver.OracleDriver
+      max-active: 100
+      max-wait: 200
+      initial-size: 20
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password: peanut#1314
+    jedis:
+      pool:
+        max-active: 10
+        max-wait: 100
+        max-idle: 20
+        min-idle: 2
+    timeout: 10000
+    database: 0
+  main:
+    allow-bean-definition-overriding: true
+#  data:
+#    elasticsearch:
+#      client:
+#        reactive:
+#          endpoints: 127.0.0.1:9200
+#  elasticsearch:
+#    rest:
+
+
+#mybatis配置
+mybatis:
+  type-aliases-package: com.example.demo.model
+  mapper-locations: classpath:mapper/*.xml
+
+#日志配置
+#logging:
+#  file:
+#    path: /Users/data/log
+#    name: springboot-demo.log
+#  config: classpath:logging-config.xml
+#  pattern:
+#   console: %d{yyyy-MM-dd HH:mm:ss} {%thread} %-5level %logger- %msg%n
+#   file: %d{yyyy-MM-dd HH:mm:ss} {%thread} %-5level %logger- %msg%n
+
+elasticsearch:
+  host: 127.0.0.1
+  port: 9200
+  schema: http
+
+pagehelper:
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+  helper-dialect: oracle
+
+

@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.dao.OperateLogDao">
+  <resultMap id="BaseResultMap" type="com.example.demo.model.OperateLog">
+    <id column="T_OPERATE_LOG_ID" jdbcType="VARCHAR" property="id" />
+    <result column="T_OPERATE_LOG_OPERATE_TABLE" jdbcType="VARCHAR" property="operateTable" />
+    <result column="T_OPERATE_LOG_OPERATE_TYPE" jdbcType="VARCHAR" property="operateType" />
+    <result column="T_OPERATE_LOG_OPERATE_STATUS" jdbcType="CHAR" property="operateStatus" />
+    <result column="T_OPERATE_LOG_CREATE_TIME" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="T_OPERATE_LOG_UPDATE_TIME" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="T_OPERATE_LOG_OPERATE_CUSTOMER" jdbcType="VARCHAR" property="operateCustomer" />
+    <result column="T_OPERATE_LOG_DATA_ID" jdbcType="VARCHAR" property="dataId" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    T_OPERATE_LOG.ID as T_OPERATE_LOG_ID, T_OPERATE_LOG.OPERATE_TABLE as T_OPERATE_LOG_OPERATE_TABLE, 
+    T_OPERATE_LOG.OPERATE_TYPE as T_OPERATE_LOG_OPERATE_TYPE, T_OPERATE_LOG.OPERATE_STATUS as T_OPERATE_LOG_OPERATE_STATUS, 
+    T_OPERATE_LOG.CREATE_TIME as T_OPERATE_LOG_CREATE_TIME, T_OPERATE_LOG.UPDATE_TIME as T_OPERATE_LOG_UPDATE_TIME, 
+    T_OPERATE_LOG.OPERATE_CUSTOMER as T_OPERATE_LOG_OPERATE_CUSTOMER, T_OPERATE_LOG.DATA_ID as T_OPERATE_LOG_DATA_ID
+  </sql>
+  <sql id="Blob_Column_List">
+    T_OPERATE_LOG.OPERATE_DATA as T_OPERATE_LOG_OPERATE_DATA
+  </sql>
+  <select id="selectByExample" parameterType="com.example.demo.model.OperateLogExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from T_OPERATE_LOG T_OPERATE_LOG
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    <include refid="Blob_Column_List" />
+    from T_OPERATE_LOG T_OPERATE_LOG
+    where T_OPERATE_LOG.ID = #{id,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String">
+    delete from T_OPERATE_LOG
+    where ID = #{id,jdbcType=VARCHAR}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.example.demo.model.OperateLogExample">
+    delete from T_OPERATE_LOG T_OPERATE_LOG
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" keyColumn="ID" keyProperty="id" parameterType="com.example.demo.model.OperateLog" useGeneratedKeys="true">
+    insert into T_OPERATE_LOG (ID, OPERATE_TABLE, OPERATE_TYPE, OPERATE_STATUS,
+      CREATE_TIME, UPDATE_TIME, OPERATE_CUSTOMER, 
+      DATA_ID, OPERATE_DATA)
+    values (#{id}, #{operateTable,jdbcType=VARCHAR}, #{operateType,jdbcType=VARCHAR}, #{operateStatus,jdbcType=CHAR},
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, #{operateCustomer,jdbcType=VARCHAR}, 
+      #{dataId,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" keyColumn="ID" keyProperty="id" parameterType="com.example.demo.model.OperateLog" useGeneratedKeys="true">
+    insert into T_OPERATE_LOG
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        ID,
+      </if>
+      <if test="operateTable != null">
+        OPERATE_TABLE,
+      </if>
+      <if test="operateType != null">
+        OPERATE_TYPE,
+      </if>
+      <if test="operateStatus != null">
+        OPERATE_STATUS,
+      </if>
+      <if test="createTime != null">
+        CREATE_TIME,
+      </if>
+      <if test="updateTime != null">
+        UPDATE_TIME,
+      </if>
+      <if test="operateCustomer != null">
+        OPERATE_CUSTOMER,
+      </if>
+      <if test="dataId != null">
+        DATA_ID,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=VARCHAR},
+      </if>
+      <if test="operateTable != null">
+        #{operateTable,jdbcType=VARCHAR},
+      </if>
+      <if test="operateType != null">
+        #{operateType,jdbcType=VARCHAR},
+      </if>
+      <if test="operateStatus != null">
+        #{operateStatus,jdbcType=CHAR},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="operateCustomer != null">
+        #{operateCustomer,jdbcType=VARCHAR},
+      </if>
+      <if test="dataId != null">
+        #{dataId,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.example.demo.model.OperateLogExample" resultType="java.lang.Long">
+    select count(*) from T_OPERATE_LOG T_OPERATE_LOG
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update T_OPERATE_LOG T_OPERATE_LOG
+    <set>
+      <if test="record.id != null">
+        T_OPERATE_LOG.ID = #{record.id,jdbcType=VARCHAR},
+      </if>
+      <if test="record.operateTable != null">
+        T_OPERATE_LOG.OPERATE_TABLE = #{record.operateTable,jdbcType=VARCHAR},
+      </if>
+      <if test="record.operateType != null">
+        T_OPERATE_LOG.OPERATE_TYPE = #{record.operateType,jdbcType=VARCHAR},
+      </if>
+      <if test="record.operateStatus != null">
+        T_OPERATE_LOG.OPERATE_STATUS = #{record.operateStatus,jdbcType=CHAR},
+      </if>
+      <if test="record.createTime != null">
+        T_OPERATE_LOG.CREATE_TIME = #{record.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.updateTime != null">
+        T_OPERATE_LOG.UPDATE_TIME = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.operateCustomer != null">
+        T_OPERATE_LOG.OPERATE_CUSTOMER = #{record.operateCustomer,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dataId != null">
+        T_OPERATE_LOG.DATA_ID = #{record.dataId,jdbcType=VARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update T_OPERATE_LOG T_OPERATE_LOG
+    set T_OPERATE_LOG.ID = #{record.id,jdbcType=VARCHAR},
+      T_OPERATE_LOG.OPERATE_TABLE = #{record.operateTable,jdbcType=VARCHAR},
+      T_OPERATE_LOG.OPERATE_TYPE = #{record.operateType,jdbcType=VARCHAR},
+      T_OPERATE_LOG.OPERATE_STATUS = #{record.operateStatus,jdbcType=CHAR},
+      T_OPERATE_LOG.CREATE_TIME = #{record.createTime,jdbcType=TIMESTAMP},
+      T_OPERATE_LOG.UPDATE_TIME = #{record.updateTime,jdbcType=TIMESTAMP},
+      T_OPERATE_LOG.OPERATE_CUSTOMER = #{record.operateCustomer,jdbcType=VARCHAR},
+      T_OPERATE_LOG.DATA_ID = #{record.dataId,jdbcType=VARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update T_OPERATE_LOG T_OPERATE_LOG
+    set T_OPERATE_LOG.ID = #{record.id,jdbcType=VARCHAR},
+      T_OPERATE_LOG.OPERATE_TABLE = #{record.operateTable,jdbcType=VARCHAR},
+      T_OPERATE_LOG.OPERATE_TYPE = #{record.operateType,jdbcType=VARCHAR},
+      T_OPERATE_LOG.OPERATE_STATUS = #{record.operateStatus,jdbcType=CHAR},
+      T_OPERATE_LOG.CREATE_TIME = #{record.createTime,jdbcType=TIMESTAMP},
+      T_OPERATE_LOG.UPDATE_TIME = #{record.updateTime,jdbcType=TIMESTAMP},
+      T_OPERATE_LOG.OPERATE_CUSTOMER = #{record.operateCustomer,jdbcType=VARCHAR},
+      T_OPERATE_LOG.DATA_ID = #{record.dataId,jdbcType=VARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.example.demo.model.OperateLog">
+    update T_OPERATE_LOG
+    <set>
+      <if test="operateTable != null">
+        OPERATE_TABLE = #{operateTable,jdbcType=VARCHAR},
+      </if>
+      <if test="operateType != null">
+        OPERATE_TYPE = #{operateType,jdbcType=VARCHAR},
+      </if>
+      <if test="operateStatus != null">
+        OPERATE_STATUS = #{operateStatus,jdbcType=CHAR},
+      </if>
+      <if test="createTime != null">
+        CREATE_TIME = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        UPDATE_TIME = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="operateCustomer != null">
+        OPERATE_CUSTOMER = #{operateCustomer,jdbcType=VARCHAR},
+      </if>
+      <if test="dataId != null">
+        DATA_ID = #{dataId,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.example.demo.model.OperateLog">
+    update T_OPERATE_LOG
+    set OPERATE_TABLE = #{operateTable,jdbcType=VARCHAR},
+      OPERATE_TYPE = #{operateType,jdbcType=VARCHAR},
+      OPERATE_STATUS = #{operateStatus,jdbcType=CHAR},
+      CREATE_TIME = #{createTime,jdbcType=TIMESTAMP},
+      UPDATE_TIME = #{updateTime,jdbcType=TIMESTAMP},
+      OPERATE_CUSTOMER = #{operateCustomer,jdbcType=VARCHAR},
+      DATA_ID = #{dataId,jdbcType=VARCHAR}
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.example.demo.model.OperateLog">
+    update T_OPERATE_LOG
+    set OPERATE_TABLE = #{operateTable,jdbcType=VARCHAR},
+      OPERATE_TYPE = #{operateType,jdbcType=VARCHAR},
+      OPERATE_STATUS = #{operateStatus,jdbcType=CHAR},
+      CREATE_TIME = #{createTime,jdbcType=TIMESTAMP},
+      UPDATE_TIME = #{updateTime,jdbcType=TIMESTAMP},
+      OPERATE_CUSTOMER = #{operateCustomer,jdbcType=VARCHAR},
+      DATA_ID = #{dataId,jdbcType=VARCHAR}
+    where ID = #{id,jdbcType=VARCHAR}
+  </update>
+</mapper>
