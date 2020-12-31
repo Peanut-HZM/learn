@@ -14,6 +14,8 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.support.replication.ReplicationResponse;
@@ -33,9 +35,13 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.VersionType;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.reindex.*;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -61,11 +67,15 @@ public class ElasticSearchRESTAPITest {
 
     private final static int PORT = 9200;
 
-    private final static int ES_SHARDS = 9;
+    private final static int ES_SHARDS = 5;
 
     private final static int ES_REPLICAS = 4;
 
     private final static int TIME_OUT = 3000;
+
+    private final static int PAGE_SIZE_MAX = 1000;
+
+    private final static int PAGE_NUM_START = 1;
 
     private final static String SCHEMA = "http";
 
@@ -79,13 +89,17 @@ public class ElasticSearchRESTAPITest {
 
     private final static String INDEX_MANAGER_INFO = "manager_info";
 
+    private final static String INDEX_MANAGER = "manager";
+
     private final static String INDEX_CUSTOMER_INFO = "customer_info";
+
+    private final static String INDEX_CUSTOMER = "customer";
 
     private final static String INDEX_ADMIN = "administrator_info";
 
-    private final static String INDEX_PRODUCT = "user_info";
+    private final static String INDEX_PRODUCT = "product";
 
-    private final static String INDEX_OPERATE_LOG = "user_info";
+    private final static String INDEX_OPERATE_LOG = "operate_log";
 
     private final static String INDEX_MAPPING = "mappings";
 
@@ -97,6 +111,13 @@ public class ElasticSearchRESTAPITest {
 
     private final static String INDEX_SETTINGS_REPLICAS = "number_of_replicas";
 
+    private final static String ANALYZER = "analyzer";
+
+    private final static String ANALYZER_IK_MAX = "ik_max_word";
+
+    private final static String ANALYZER_IK_SMART = "ik_max_word";
+
+    private final static RequestOptions requestOptions = RequestOptions.DEFAULT;
 
     /**
      * 对索引的操作使用：RestHighLevelClient.indices()，参数GetIndexRequest,CreateIndexRequest,DeleteIndexRequest
@@ -136,6 +157,9 @@ public class ElasticSearchRESTAPITest {
     private HashMap<String,Object> getMap(String key, Object value){
         HashMap<String, Object> map = new HashMap<>();
         map.put(key,value);
+        if ("name".equals(key) || "address".equals(key) || "school".equals(key)){
+            map.put(ANALYZER,ANALYZER_IK_SMART);
+        }
         return map;
     }
 
@@ -143,24 +167,24 @@ public class ElasticSearchRESTAPITest {
     @Test
     public void createIndexRequestTest(){
         RestHighLevelClient esRestClient = getESRestClient();
-
-        GetIndexRequest getRequest = new GetIndexRequest(INDEX_MANAGER_INFO);
+        String indexName = INDEX_MANAGER;
+        GetIndexRequest getRequest = new GetIndexRequest(indexName);
         try {
-            boolean exists = esRestClient.indices().exists(getRequest,RequestOptions.DEFAULT);
+            boolean exists = esRestClient.indices().exists(getRequest,requestOptions);
             if (exists){
-                GetIndexResponse getIndexResponse = esRestClient.indices().get(getRequest, RequestOptions.DEFAULT);
+                GetIndexResponse getIndexResponse = esRestClient.indices().get(getRequest, requestOptions);
                 Map<String, MappingMetadata> mappings = getIndexResponse.getMappings();
                 DeleteIndexRequest deleteRequest = new DeleteIndexRequest(INDEX_MANAGER_INFO);
-                AcknowledgedResponse delete = esRestClient.indices().delete(deleteRequest, RequestOptions.DEFAULT);
+                AcknowledgedResponse delete = esRestClient.indices().delete(deleteRequest, requestOptions);
                 if (delete.isAcknowledged()){
-                    log.info("索引：{}存在，已删除",INDEX_MANAGER_INFO);
+                    log.info("索引：{}存在，已删除", indexName);
                 }
             }
         }catch (Exception e){
             e.printStackTrace();
         }
 
-        CreateIndexRequest customerInfoCreateIndexRequest = new CreateIndexRequest(INDEX_MANAGER_INFO);
+        CreateIndexRequest customerInfoCreateIndexRequest = new CreateIndexRequest(indexName);
         HashMap<String, HashMap<String, Object>> properties = new HashMap<>();
         properties.put("id" , getMap("type","text"));
         properties.put("name" , getMap("type","text"));
@@ -187,9 +211,9 @@ public class ElasticSearchRESTAPITest {
                     .endObject();
 
             customerInfoCreateIndexRequest.source(jsonBuilder);
-            esRestClient.indices().create(customerInfoCreateIndexRequest , RequestOptions.DEFAULT);
+            esRestClient.indices().create(customerInfoCreateIndexRequest , requestOptions);
         } catch (IOException e) {
-            log.info("创建索引：{}失败",INDEX_CUSTOMER_INFO);
+            log.info("创建索引：{}失败", indexName);
             e.printStackTrace();
         }
 
@@ -202,7 +226,7 @@ public class ElasticSearchRESTAPITest {
         managerInfoCreateIndex.settings(settingMap);
 
         try {
-            esRestClient.indices().create(managerInfoCreateIndex,RequestOptions.DEFAULT);
+            esRestClient.indices().create(managerInfoCreateIndex,requestOptions);
         }catch (Exception e){
             e.printStackTrace();
             log.info("创建索引：{}失败",INDEX_MANAGER_INFO);
@@ -293,9 +317,9 @@ public class ElasticSearchRESTAPITest {
         //        发起索引操作请求
             try {
                 indexRequest.id(String.valueOf(i));
-                IndexResponse indexResponse = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
+                IndexResponse indexResponse = restHighLevelClient.index(indexRequest, requestOptions);
                 log.info("索引创建成功：{} , 数据id:{}" , indexResponse.getIndex() , indexResponse.getId());
-        //            Cancellable indexAsync = restHighLevelClient.indexAsync(indexRequest, RequestOptions.DEFAULT, new ESActionListener());
+        //            Cancellable indexAsync = restHighLevelClient.indexAsync(indexRequest, requestOptions, new ESActionListener());
             }catch (Exception e){
                 e.printStackTrace();
                 log.info("索引创建失败！！！！");
@@ -333,7 +357,7 @@ public class ElasticSearchRESTAPITest {
 //        getRequest.id(String.valueOf(67));
         //通过id查询es中的数据
         try {
-            GetResponse getResponse = esRestClient.get(getRequest, RequestOptions.DEFAULT);
+            GetResponse getResponse = esRestClient.get(getRequest, requestOptions);
             String sourceAsString = getResponse.getSourceAsString();
             log.info("通过id:{}，获取的数据：{}" , getRequest.id() , sourceAsString);
         }catch (Exception e){
@@ -352,7 +376,7 @@ public class ElasticSearchRESTAPITest {
         GetSourceRequest getSourceRequest = new GetSourceRequest(INDEX_USER_INFO, DOCUMENT_ID);
 
         try {
-            GetSourceResponse getSourceResponse = esRestClient.getSource(getSourceRequest, RequestOptions.DEFAULT);
+            GetSourceResponse getSourceResponse = esRestClient.getSource(getSourceRequest, requestOptions);
             Map<String, Object> source = getSourceResponse.getSource();
             log.info("通过id:{}，获取的数据：{}" , getSourceRequest.id() , source);
         }catch (Exception e){
@@ -369,7 +393,7 @@ public class ElasticSearchRESTAPITest {
         getRequest.fetchSourceContext(new FetchSourceContext(false));
         getRequest.storedFields("_none_");
         try {
-            boolean exists = esRestClient.exists(getRequest, RequestOptions.DEFAULT);
+            boolean exists = esRestClient.exists(getRequest, requestOptions);
             if (exists){
                 log.info("{}索引下存在id为{}的数据",INDEX_USER_INFO,DOCUMENT_ID);
             }else {
@@ -388,7 +412,7 @@ public class ElasticSearchRESTAPITest {
         deleteRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
 
         try {
-            DeleteResponse delete = esRestClient.delete(deleteRequest, RequestOptions.DEFAULT);
+            DeleteResponse delete = esRestClient.delete(deleteRequest, requestOptions);
             RestStatus status = delete.status();
 //            删除操作结果的判断
             if (status.equals(RestStatus.OK)){
@@ -440,7 +464,7 @@ public class ElasticSearchRESTAPITest {
         updateRequest.doc(map);
 
         try {
-            UpdateResponse updateResponse = esRestClient.update(updateRequest, RequestOptions.DEFAULT);
+            UpdateResponse updateResponse = esRestClient.update(updateRequest, requestOptions);
             RestStatus status = updateResponse.status();
             DocWriteResponse.Result result = updateResponse.getResult();
             if (result.equals(DocWriteResponse.Result.CREATED)){
@@ -478,7 +502,7 @@ public class ElasticSearchRESTAPITest {
                     .endObject()
                     .endObject();
             TermVectorsRequest termVectorsRequest = new TermVectorsRequest(INDEX_USER_INFO, jsonBuilder);
-            TermVectorsResponse termVectorsResponse = esRestClient.termvectors(termVectorsRequest, RequestOptions.DEFAULT);
+            TermVectorsResponse termVectorsResponse = esRestClient.termvectors(termVectorsRequest, requestOptions);
             String id = termVectorsRequest.getId();
             String[] fields = termVectorsRequest.getFields();
             List<TermVectorsResponse.TermVector> termVectorsList = termVectorsResponse.getTermVectorsList();
@@ -652,7 +676,7 @@ public class ElasticSearchRESTAPITest {
         }*/
 
         try {
-            BulkResponse bulkResponse = esRestClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+            BulkResponse bulkResponse = esRestClient.bulk(bulkRequest, requestOptions);
             if (bulkResponse.hasFailures()){
                 for (BulkItemResponse bulkItemResponse : bulkResponse) {
                     if (bulkItemResponse.isFailed()){
@@ -681,7 +705,7 @@ public class ElasticSearchRESTAPITest {
             multiGetRequest.add(new MultiGetRequest.Item(INDEX_USER_INFO , String.valueOf(i)));
         }
         try {
-            MultiGetResponse multiGetResponse = esRestClient.mget(multiGetRequest, RequestOptions.DEFAULT);
+            MultiGetResponse multiGetResponse = esRestClient.mget(multiGetRequest, requestOptions);
             MultiGetItemResponse[] responses = multiGetResponse.getResponses();
             for (MultiGetItemResponse getItemResponse : responses) {
                 GetResponse response = getItemResponse.getResponse();
@@ -699,12 +723,12 @@ public class ElasticSearchRESTAPITest {
         //复制一个索引以及其中的数据，索引不存在就创建，存在则不会变化
         RestHighLevelClient esRestClient = getESRestClient();
         ReindexRequest reindexRequest = new ReindexRequest();
-        reindexRequest.setSourceIndices(INDEX_ADMIN);
-        reindexRequest.setDestIndex(INDEX_MANAGER_INFO);
-        reindexRequest.setDestVersionType(VersionType.INTERNAL);
-        reindexRequest.setDestOpType("create");
+        reindexRequest.setSourceIndices(INDEX_ADMIN,INDEX_MANAGER_INFO);
+        reindexRequest.setDestIndex(INDEX_MANAGER);
+//        reindexRequest.setDestVersionType(VersionType.INTERNAL);
+//        reindexRequest.setDestOpType("create");
         try {
-            BulkByScrollResponse response = esRestClient.reindex(reindexRequest, RequestOptions.DEFAULT);
+            BulkByScrollResponse response = esRestClient.reindex(reindexRequest, requestOptions);
             List<BulkItemResponse.Failure> bulkFailures = response.getBulkFailures();
         }catch (Exception e){
             e.printStackTrace();
@@ -719,7 +743,7 @@ public class ElasticSearchRESTAPITest {
         updateByQueryRequest.setQuery(new TermQueryBuilder("userName","peter"));
         updateByQueryRequest.setMaxDocs(20);
         try {
-            BulkByScrollResponse bulkByScrollResponse = esRestClient.updateByQuery(updateByQueryRequest, RequestOptions.DEFAULT);
+            BulkByScrollResponse bulkByScrollResponse = esRestClient.updateByQuery(updateByQueryRequest, requestOptions);
             int batches = bulkByScrollResponse.getBatches();
             List<BulkItemResponse.Failure> bulkFailures = bulkByScrollResponse.getBulkFailures();
             long bulkRetries = bulkByScrollResponse.getBulkRetries();
@@ -735,6 +759,57 @@ public class ElasticSearchRESTAPITest {
         }
     }
 
+    @Test
+    public void searchRequestTest(){
 
+        //获取ES查询的客户端
+        RestHighLevelClient esRestClient = getESRestClient();
+        //构建查询请求
+        SearchRequest searchRequest = new SearchRequest(INDEX_MANAGER);
 
+        //构建查询请求条件
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        //查询所有数据
+        //searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+
+        searchSourceBuilder.query(QueryBuilders.termQuery("address","北京市"));
+
+        //设置分页参数
+        searchSourceBuilder.from(1);
+        //最大只能返回一万条数据，不做设置时默认返回一万条
+        searchSourceBuilder.size(PAGE_SIZE_MAX);
+
+        searchRequest.source(searchSourceBuilder);
+
+        try {
+            SearchResponse search = esRestClient.search(searchRequest, requestOptions);
+            SearchHits hits = search.getHits();
+            long value = hits.getTotalHits().value;
+            log.info("查询到的数据有{}条" , value);
+            for (SearchHit hit : hits) {
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                log.info(sourceAsMap.toString());
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void deleteIndex() {
+        RestHighLevelClient esRestClient = getESRestClient();
+
+        String indexName = INDEX_OPERATE_LOG;
+
+        DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest(indexName);
+        try {
+            AcknowledgedResponse response = esRestClient.indices().delete(deleteIndexRequest, requestOptions);
+            if (response.isAcknowledged()){
+                log.info("索引：{}删除成功！！！！" , indexName);
+            }
+        }catch (Exception e){
+            log.info("删除索引：{}失败" , indexName);
+            e.printStackTrace();
+        }
+    }
 }
