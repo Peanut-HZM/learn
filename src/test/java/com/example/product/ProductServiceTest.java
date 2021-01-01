@@ -7,12 +7,11 @@ import com.example.demo.model.OperateLog;
 import com.example.demo.service.OperateLogService;
 import com.example.demo.service.ProductService;
 import com.example.demo.threadPool.ThreadPool;
-import com.example.demo.utils.GenerateIdUtils;
+import com.example.demo.utils.CommonUtils;
 import com.example.demo.model.Product;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -23,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.ObjectUtils;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -73,12 +71,12 @@ public class ProductServiceTest extends SpringBootApplicationTest {
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < TOTAL_AMOUNT; i++) {
             Product product = new Product();
-            product.setId(GenerateIdUtils.getUUID());
+            product.setId(CommonUtils.getUUID());
             product.setName("test" + productService.getProductAmount());
             product.setCreateTime(new Date());
             product.setUpdateTime(new Date());
-            product.setPrice(GenerateIdUtils.getNumberic());
-            product.setType(GenerateIdUtils.getType());
+            product.setPrice(CommonUtils.getNumberic());
+            product.setType(CommonUtils.getType());
             productService.saveProduct(product);
             product = null;
         }
@@ -126,14 +124,14 @@ public class ProductServiceTest extends SpringBootApplicationTest {
     private void saveOperate() {
         long startTime2 = System.currentTimeMillis();
         Product product = new Product();
-        product.setId(GenerateIdUtils.getUUID());
+        product.setId(CommonUtils.getUUID());
 //        int size = productService.getAllProduct(product).size();
         long size = productService.getProductAmount();
         product.setName("test" + size);
         product.setCreateTime(new Date());
         product.setUpdateTime(new Date());
-        product.setPrice(GenerateIdUtils.getNumberic());
-        product.setType(GenerateIdUtils.getType());
+        product.setPrice(CommonUtils.getNumberic());
+        product.setType(CommonUtils.getType());
         productService.saveProduct(product);
         log.info("当前线程id:{}，线程名称：{}，操作一条数据耗时：{}毫秒", Thread.currentThread().getId(), Thread.currentThread().getName(), (System.currentTimeMillis() - startTime2));
 //        System.out.println("当前线程：" + Thread.currentThread().getName() + "操作一条数据耗时：" + (System.currentTimeMillis() - startTime2));

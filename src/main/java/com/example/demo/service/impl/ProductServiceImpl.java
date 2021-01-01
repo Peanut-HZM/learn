@@ -8,7 +8,7 @@ import com.example.demo.model.OperateLog;
 import com.example.demo.model.Product;
 import com.example.demo.model.ProductExample;
 import com.example.demo.service.ProductService;
-import com.example.demo.utils.GenerateIdUtils;
+import com.example.demo.utils.CommonUtils;
 import com.github.pagehelper.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.List;
 
 /**
  * @Author HuaZhongmin
@@ -50,7 +49,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Integer saveProduct(Product product) {
         OperateLog operateLog = new OperateLog();
-        operateLog.setId(GenerateIdUtils.getUUID());
+        operateLog.setId(CommonUtils.getUUID());
         operateLog.setCreateTime(new Date());
         operateLog.setOperateCustomer("peanut");
         operateLog.setOperateStatus(String.valueOf(1));
@@ -86,7 +85,7 @@ public class ProductServiceImpl implements ProductService {
     public int operateProduct(Product product){
         int result = 0;
         OperateLog operateLog = new OperateLog();
-        operateLog.setId(GenerateIdUtils.getUUID());
+        operateLog.setId(CommonUtils.getUUID());
         operateLog.setCreateTime(new Date());
         operateLog.setOperateCustomer("peanut");
         operateLog.setOperateStatus(String.valueOf(1));

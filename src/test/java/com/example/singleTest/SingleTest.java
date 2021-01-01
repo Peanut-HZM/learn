@@ -1,6 +1,6 @@
 package com.example.singleTest;
 
-import com.example.demo.utils.GenerateIdUtils;
+import com.example.demo.utils.CommonUtils;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
@@ -21,7 +21,7 @@ public class SingleTest {
     public void testList(){
         ArrayList<Integer> list = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
-            list.add(Integer.valueOf(GenerateIdUtils.getType()));
+            list.add(Integer.valueOf(CommonUtils.getType()));
         }
         List<List<Integer>> partition = Lists.partition(list, 20);
         List<Integer> list1 = partition.get(0);

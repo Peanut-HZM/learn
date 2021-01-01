@@ -13,7 +13,7 @@ import java.util.UUID;
  * @Time 13:38
  * @Week 周一
  **/
-public class GenerateIdUtils {
+public class CommonUtils {
 
     public static String getUUID(){
         return UUID.randomUUID().toString().replace("-","").toUpperCase();

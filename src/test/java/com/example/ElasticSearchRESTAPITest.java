@@ -1,7 +1,7 @@
 package com.example;
 
 import com.example.demo.model.Product;
-import com.example.demo.utils.GenerateIdUtils;
+import com.example.demo.utils.CommonUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.DocWriteResponse;
@@ -137,12 +137,12 @@ public class ElasticSearchRESTAPITest {
 
     public static void main(String[] args) {
         Product product = new Product();
-        product.setId(GenerateIdUtils.getUUID());
+        product.setId(CommonUtils.getUUID());
         product.setName("test" + 90000000);
         product.setCreateTime(new Date());
         product.setUpdateTime(new Date());
-        product.setPrice(GenerateIdUtils.getNumberic());
-        product.setType(GenerateIdUtils.getType());
+        product.setPrice(CommonUtils.getNumberic());
+        product.setType(CommonUtils.getType());
         log.info(product.toString());
     }
 
@@ -269,7 +269,7 @@ public class ElasticSearchRESTAPITest {
         for (int i = 0; i < 1000; i++) {
             try {
                 XContentBuilder jsonBuilder = XContentFactory.jsonBuilder();
-                String uuid = GenerateIdUtils.getUUID();
+                String uuid = CommonUtils.getUUID();
                 jsonBuilder.startObject();
                 {
                     jsonBuilder.field("id", uuid);
@@ -608,7 +608,7 @@ public class ElasticSearchRESTAPITest {
         try {
             UpdateRequest updateRequest = new UpdateRequest(INDEX_USER_INFO, UPDATE_DOCUMENT_ID);
             XContentBuilder jsonBuilder = XContentFactory.jsonBuilder();
-            String uuid = GenerateIdUtils.getUUID();
+            String uuid = CommonUtils.getUUID();
             jsonBuilder.startObject();
             {
                 jsonBuilder.field("id", UPDATE_DOCUMENT_ID);
