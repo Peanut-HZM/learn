@@ -4,6 +4,7 @@ import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Calendar;
 import java.util.Random;
 import java.util.UUID;
 
@@ -25,9 +26,17 @@ public class CommonUtils {
         return BigDecimal.valueOf(numberic).setScale(2, RoundingMode.UP);
     }
 
+    public static long getRandomDigital(long range){
+        double random = Math.random() * range;
+        System.out.println(random);
+        long randomLong = (long) random;
+        System.out.println(randomLong);
+        return randomLong;
+    }
+
     public static String getType(){
         double random = Math.random();
-        int type = (int) (random * 10);
+        int type = (int) (random * 100);
         return String.valueOf(type);
     }
 
@@ -53,8 +62,22 @@ public class CommonUtils {
             return result.toString();
     }
 
+
+    public static long getRandomTime(long subTime){
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(2010,Calendar.JANUARY,1);
+        System.out.println(calendar.getTime());
+        long timeInMillis = calendar.getTimeInMillis() + subTime;
+        calendar.setTimeInMillis(timeInMillis);
+        System.out.println(calendar.getTime());
+        return timeInMillis;
+    }
+
     public static void main(String[] args) {
-        System.out.println(getStringZH(200));
+        long randomDigital = getRandomDigital(1000000000L);
+        long randomTime = getRandomTime(-randomDigital);
+        System.out.println(randomTime);
+        System.out.println(System.currentTimeMillis());
     }
 
     @Test
