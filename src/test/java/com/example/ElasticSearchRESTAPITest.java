@@ -6,6 +6,8 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheRequest;
+import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheRequestBuilder;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -22,10 +24,7 @@ import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.*;
-import org.elasticsearch.client.core.GetSourceRequest;
-import org.elasticsearch.client.core.GetSourceResponse;
-import org.elasticsearch.client.core.TermVectorsRequest;
-import org.elasticsearch.client.core.TermVectorsResponse;
+import org.elasticsearch.client.core.*;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
@@ -66,10 +65,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @Author HuaZhongmin
@@ -115,7 +111,7 @@ public class ElasticSearchRESTAPITest {
 
     private final static String INDEX_CUSTOMER = "customer";
 
-    private final static String INDEX_ADMIN = "administrator_info";
+    private final static String INDEX_ADMIN = "admin_info";
 
     private final static String INDEX_PRODUCT = "product";
 
@@ -603,10 +599,10 @@ public class ElasticSearchRESTAPITest {
     public void bulkRequestTest() {
         long startTime = System.currentTimeMillis();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 856; i < 10000; i++) {
             BulkRequest bulkRequest = new BulkRequest();
-            for (int j = i * 100000; j < (i + 1) * 100000; j++) {
-                IndexRequest indexRequest = new IndexRequest(INDEX_CUSTOMER);
+            for (int j = i * 10000; j < (i + 1) * 10000; j++) {
+                IndexRequest indexRequest = new IndexRequest(INDEX_ADMIN);
                 try {
                     XContentBuilder jsonBuilder = XContentFactory.jsonBuilder();
                     jsonBuilder.startObject();
@@ -619,8 +615,8 @@ public class ElasticSearchRESTAPITest {
                         jsonBuilder.field("weight", CommonUtils.getNumberic().doubleValue());
                         jsonBuilder.field("role", roleArray[i % roleArray.length]);
 
-                        jsonBuilder.field("createTime", CommonUtils.getRandomTime(-CommonUtils.getRandomDigital(1000000000L)));
-                        jsonBuilder.field("updateTime", CommonUtils.getRandomTime(CommonUtils.getRandomDigital(1000000000L)));
+                        jsonBuilder.field("createTime", CommonUtils.getRandomTime(-CommonUtils.getRandomDigital(10000000000L)));
+                        jsonBuilder.field("updateTime", CommonUtils.getRandomTime(CommonUtils.getRandomDigital(10000000000L)));
                         jsonBuilder.field("isMarried", Integer.parseInt(CommonUtils.getType()) > 5);
                         jsonBuilder.field("isGraduated", Integer.parseInt(CommonUtils.getType()) > 5);
                         jsonBuilder.startObject("workExperience");
@@ -838,27 +834,46 @@ public class ElasticSearchRESTAPITest {
     }
 
     @Test
+    public void countRequestTest(){
+        RestHighLevelClient esRestClient = getESRestClient();
+        String indexAdmin = INDEX_ADMIN;
+        CountRequest countRequest = new CountRequest(indexAdmin);
+
+        try {
+            CountResponse countResponse = esRestClient.count(countRequest, requestOptions);
+            long count = countResponse.getCount();
+            log.info("索引：{}中包含的文档数量：{}", indexAdmin,count);
+        }catch (Exception e){
+            log.info(e.getMessage());
+        }
+    }
+
+    @Test
     public void searchRequestTest() {
 
         //获取ES查询的客户端
         RestHighLevelClient esRestClient = getESRestClient();
         //构建查询请求
-        SearchRequest searchRequest = new SearchRequest(INDEX_USER_INFO);
-
+        SearchRequest searchRequest = new SearchRequest(INDEX_ADMIN);
+        //设置当前请求的结果是否被缓存
+        searchRequest.requestCache(true);
         //构建查询请求条件
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         //查询所有数据
-        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        //searchSourceBuilder.query(QueryBuilders.matchAllQuery());
 
         //设置关键字查询条件 未使用中文分词器时，中文被默认按照每个汉字拆分作为关键字，做匹配查询
-//        searchSourceBuilder.query(QueryBuilders.termQuery("userName","Jhon"));
+        //searchSourceBuilder.query(QueryBuilders.termQuery("userName","Jhon"));
+//        searchSourceBuilder.query(QueryBuilders.constantScoreQuery(QueryBuilders.matchQuery("name","Richard")));
+//        searchSourceBuilder.query(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery("name","Jhon")));
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
 
         //默认分词之后根据关键字模糊查询，中文字段不分词也可模糊查询
-        MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("address", "景田");
+        /*MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("address", "景田");
         matchQueryBuilder.fuzziness(Fuzziness.AUTO);
         matchQueryBuilder.prefixLength(3);
         matchQueryBuilder.maxExpansions(10);
-        searchSourceBuilder.query(matchQueryBuilder);
+        searchSourceBuilder.query(matchQueryBuilder);*/
 
         //设置高亮
         HighlightBuilder highlightBuilder = new HighlightBuilder();
@@ -875,7 +890,8 @@ public class ElasticSearchRESTAPITest {
 
 //        searchSourceBuilder.fetchSource(Strings.EMPTY_ARRAY , excludeFields);
         //设置排序条件
-        searchSourceBuilder.sort("height", SortOrder.DESC);
+//        searchSourceBuilder.sort("height", SortOrder.DESC);
+        searchSourceBuilder.sort("id", SortOrder.DESC);
 
         //聚合查询
         TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms("workExperience.level").field("workExperience.level");
@@ -883,11 +899,14 @@ public class ElasticSearchRESTAPITest {
         searchSourceBuilder.aggregation(aggregationBuilder);
 
         //设置分页参数
-        searchSourceBuilder.from(3);
+        searchSourceBuilder.from(1);
         //最大只能返回一万条数据，不做设置时默认返回一万条
         searchSourceBuilder.size(PAGE_SIZE_MAX);
 
         searchRequest.source(searchSourceBuilder);
+
+//        ClearIndicesCacheRequest clearIndicesCacheRequest = new ClearIndicesCacheRequest();
+//        ClearIndicesCacheRequestBuilder clearIndicesCacheRequestBuilder = new ClearIndicesCacheRequestBuilder();
 
         try {
             SearchResponse searchResponse = esRestClient.search(searchRequest, requestOptions);
@@ -1052,22 +1071,56 @@ public class ElasticSearchRESTAPITest {
 
     @Test
     public void updateByQueryTest() {
+        RestHighLevelClient esRestClient = getESRestClient();
+
         UpdateByQueryRequest updateByQueryRequest = new UpdateByQueryRequest(INDEX_CUSTOMER_INFO);
         //数据版本冲突时处理
         updateByQueryRequest.setConflicts("proceed");
-        updateByQueryRequest.setQuery(QueryBuilders.matchPhraseQuery("name", "Rich"));
-        Script script = new Script("");
+        updateByQueryRequest.setQuery(QueryBuilders.matchPhraseQuery("name", "李二17"));
+
+        String userName = "陈平安";
+
+        Script script = new Script(ScriptType.INLINE,
+                "painless",
+                "ctx._source.name = " + userName,
+                Collections.emptyMap());
+
         updateByQueryRequest.setScript(script);
+
+        try {
+            BulkByScrollResponse bulkByScrollResponse = esRestClient.updateByQuery(updateByQueryRequest, requestOptions);
+            int batches = bulkByScrollResponse.getBatches();
+
+            long bulkRetries = bulkByScrollResponse.getBulkRetries();
+
+            long created = bulkByScrollResponse.getCreated();
+
+            long deleted = bulkByScrollResponse.getDeleted();
+
+            long updated = bulkByScrollResponse.getUpdated();
+
+            long total = bulkByScrollResponse.getTotal();
+
+            TimeValue took = bulkByScrollResponse.getTook();
+
+            long millis = took.getMillis();
+
+            log.info("操作耗时：{}" , millis);
+        }catch (Exception e){
+            log.error(e.getMessage());
+        }
+
+
     }
 
     @Test
     public void deleteByQueryTest() {
         RestHighLevelClient esRestClient = getESRestClient();
 
-        SearchRequest searchRequest = new SearchRequest();
+        SearchRequest searchRequest = new SearchRequest(INDEX_CUSTOMER_INFO);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         //match查询会把查询条件分词，再去进行匹配查询，只要分词后的任一关键词匹配上，则返回结果
-        searchSourceBuilder.query(QueryBuilders.matchQuery("name", "Jhon Peter Richard"));
+        searchSourceBuilder.query(QueryBuilders.matchQuery("name", "Peter"));
 //        searchSourceBuilder.query(QueryBuilders.matchPhraseQuery("name","Thomas"));
 //        searchSourceBuilder.query(QueryBuilders.matchPhrasePrefixQuery("name","Thomas84"));
         //term查询不会对查询条件分词，直接以查询条件做匹配，匹配就返回
@@ -1078,11 +1131,12 @@ public class ElasticSearchRESTAPITest {
 
 
         DeleteByQueryRequest deleteByQueryRequest = new DeleteByQueryRequest(INDEX_CUSTOMER_INFO);
-        deleteByQueryRequest.setQuery(QueryBuilders.matchPhraseQuery("name", "aaa Peter bbb"));
-//        deleteByQueryRequest.setQuery(QueryBuilders.matchQuery("name","Peter"));
+//        deleteByQueryRequest.setQuery(QueryBuilders.matchPhraseQuery("name", "aaa Peter bbb"));
+        deleteByQueryRequest.setQuery(QueryBuilders.matchQuery("name", "Peter"));
 //        deleteByQueryRequest.setQuery(QueryBuilders.termQuery("name","Peter"));
 //        deleteByQueryRequest.setQuery(QueryBuilders.matchPhrasePrefixQuery("name","Peter"));
-        deleteByQueryRequest.setMaxDocs(PAGE_SIZE_MAX);
+        //设置操作的文档数量
+        deleteByQueryRequest.setMaxDocs(500);
         deleteByQueryRequest.setConflicts("proceed");
         deleteByQueryRequest.setRefresh(true);
 
@@ -1097,21 +1151,18 @@ public class ElasticSearchRESTAPITest {
             long total = hits.getTotalHits().value;
             log.info("当前查询到的总数：{}，当前查询返回的数据：{}", total, count);
 
-            Aggregations aggregations = searchResponse.getAggregations();
-
-            Aggregation aggregation = aggregations.get("key");
-
-
-            /*BulkByScrollResponse bulkByScrollResponse = esRestClient.deleteByQuery(deleteByQueryRequest, requestOptions);
+            BulkByScrollResponse bulkByScrollResponse = esRestClient.deleteByQuery(deleteByQueryRequest, requestOptions);
             //值未为0贼表示没有数据被删除，值为1表示删除数据成功
             int batches = bulkByScrollResponse.getBatches();
             log.info("batches: {}" , batches);
+            long updated = bulkByScrollResponse.getUpdated();
+            log.info("updated: {}" , updated);
             //批量操作删除的数据
             long deleted = bulkByScrollResponse.getDeleted();
             log.info("deleted: {}" , deleted);
             //总共操作的数据
-            long total = bulkByScrollResponse.getTotal();
-            log.info("total: {}" , total);*/
+            long bulkTotal = bulkByScrollResponse.getTotal();
+            log.info("total: {}" , bulkTotal);
 
 
         } catch (Exception e) {
