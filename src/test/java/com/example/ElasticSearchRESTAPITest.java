@@ -6,8 +6,6 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.DocWriteResponse;
-import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheRequest;
-import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheRequestBuilder;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -28,14 +26,11 @@ import org.elasticsearch.client.core.*;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.unit.Fuzziness;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.VersionType;
-import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.reindex.*;
@@ -49,15 +44,12 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.InternalAggregation;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.Test;
-import org.junit.platform.commons.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +73,7 @@ public class ElasticSearchRESTAPITest {
 
     private final static String HOSTNAME = "127.0.0.1";
 
-    private final static int PORT = 10201;
+    private final static int PORT = 8201;
 
     private final static int ES_SHARDS = 5;
 
@@ -225,7 +217,6 @@ public class ElasticSearchRESTAPITest {
             boolean exists = esRestClient.indices().exists(getRequest, requestOptions);
             if (exists) {
                 GetIndexResponse getIndexResponse = esRestClient.indices().get(getRequest, requestOptions);
-                Map<String, MappingMetadata> mappings = getIndexResponse.getMappings();
                 DeleteIndexRequest deleteRequest = new DeleteIndexRequest(INDEX_MANAGER_INFO);
                 AcknowledgedResponse delete = esRestClient.indices().delete(deleteRequest, requestOptions);
                 if (delete.isAcknowledged()) {
@@ -1054,7 +1045,7 @@ public class ElasticSearchRESTAPITest {
     public void deleteIndex() {
         RestHighLevelClient esRestClient = getESRestClient();
 
-        String indexName = INDEX_OPERATE_LOG;
+        String indexName = INDEX_MANAGER_INFO;
 
         DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest(indexName);
         try {
