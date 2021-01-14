@@ -75,9 +75,9 @@ public class ElasticSearchRESTAPITest {
 
     private final static int PORT = 8201;
 
-    private final static int ES_SHARDS = 5;
+    private final static int ES_SHARDS = 3;
 
-    private final static int ES_REPLICAS = 4;
+    private final static int ES_REPLICAS = 2;
 
     private final static int TIME_OUT = 3000;
 
@@ -249,7 +249,7 @@ public class ElasticSearchRESTAPITest {
         //索引设置方式一 JsonBuilder
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             jsonBuilder.startObject()
-                    .startObject(INDEX_MAPPING).field(INDEX_MAPPING_PROPERTIES, properties).endObject()
+//                    .startObject(INDEX_MAPPING).field(INDEX_MAPPING_PROPERTIES, properties).endObject()
                     .startObject(INDEX_SETTINGS).field(INDEX_SETTINGS_SHARDS, ES_SHARDS).field(INDEX_SETTINGS_REPLICAS, ES_REPLICAS).endObject()
                     .endObject();
 
@@ -845,7 +845,7 @@ public class ElasticSearchRESTAPITest {
         //获取ES查询的客户端
         RestHighLevelClient esRestClient = getESRestClient();
         //构建查询请求
-        SearchRequest searchRequest = new SearchRequest(INDEX_ADMIN);
+        SearchRequest searchRequest = new SearchRequest(INDEX_CUSTOMER);
         //设置当前请求的结果是否被缓存
         searchRequest.requestCache(true);
         //构建查询请求条件
@@ -867,13 +867,13 @@ public class ElasticSearchRESTAPITest {
         searchSourceBuilder.query(matchQueryBuilder);*/
 
         //设置高亮
-        HighlightBuilder highlightBuilder = new HighlightBuilder();
+        /*HighlightBuilder highlightBuilder = new HighlightBuilder();
         HighlightBuilder.Field userNameField = new HighlightBuilder.Field("userName");
         userNameField.highlighterType("unified");
         highlightBuilder.field(userNameField);
         HighlightBuilder.Field addressField = new HighlightBuilder.Field("address");
         highlightBuilder.field(addressField);
-        searchSourceBuilder.highlighter(highlightBuilder);
+        searchSourceBuilder.highlighter(highlightBuilder);*/
 
 //        String[] excludeFields = new String[]{"isMarried","role"};
 
@@ -882,7 +882,7 @@ public class ElasticSearchRESTAPITest {
 //        searchSourceBuilder.fetchSource(Strings.EMPTY_ARRAY , excludeFields);
         //设置排序条件
 //        searchSourceBuilder.sort("height", SortOrder.DESC);
-        searchSourceBuilder.sort("id", SortOrder.DESC);
+//        searchSourceBuilder.sort("id", SortOrder.DESC);
 
         //聚合查询
         TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms("workExperience.level").field("workExperience.level");
