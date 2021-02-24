@@ -1,5 +1,6 @@
 package com.example;
 
+import com.alibaba.fastjson.JSONObject;
 import com.example.demo.model.Product;
 import com.example.demo.utils.CommonUtils;
 import org.apache.http.HttpHost;
@@ -27,10 +28,12 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.VersionType;
+import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.reindex.*;
@@ -58,6 +61,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author HuaZhongmin
@@ -98,6 +102,8 @@ public class ElasticSearchRESTAPITest {
     private final static String INDEX_MANAGER_INFO = "manager_info";
 
     private final static String INDEX_MANAGER = "manager";
+
+    private final static String INDEX_MANAGER_TEST = "manager_test";
 
     private final static String INDEX_CUSTOMER_INFO = "customer_info";
 
@@ -211,7 +217,7 @@ public class ElasticSearchRESTAPITest {
     @Test
     public void createIndexRequestTest() {
         RestHighLevelClient esRestClient = getESRestClient();
-        String indexName = INDEX_CUSTOMER;
+        String indexName = "manager_test02";
         GetIndexRequest getRequest = new GetIndexRequest(indexName);
         try {
             boolean exists = esRestClient.indices().exists(getRequest, requestOptions);
@@ -249,7 +255,7 @@ public class ElasticSearchRESTAPITest {
         //索引设置方式一 JsonBuilder
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             jsonBuilder.startObject()
-//                    .startObject(INDEX_MAPPING).field(INDEX_MAPPING_PROPERTIES, properties).endObject()
+                    .startObject(INDEX_MAPPING).field(INDEX_MAPPING_PROPERTIES, properties).endObject()
                     .startObject(INDEX_SETTINGS).field(INDEX_SETTINGS_SHARDS, ES_SHARDS).field(INDEX_SETTINGS_REPLICAS, ES_REPLICAS).endObject()
                     .endObject();
 
@@ -373,15 +379,15 @@ public class ElasticSearchRESTAPITest {
     @Test
     public void getIndexRequestTest() {
         RestHighLevelClient esRestClient = getESRestClient();
-        GetRequest getRequest = new GetRequest(INDEX_USER_INFO, "1");
+        GetRequest getRequest = new GetRequest(INDEX_MANAGER_TEST + "03", "70001");
 //        getRequest.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
 
 //        String[] includes = {"setting.number_of_shards", "isGraduated"};
-        String[] excludes = {"setting.number_of_shards", "isGraduated"};
-        String[] includes = Strings.EMPTY_ARRAY;
+//        String[] excludes = {"setting.number_of_shards", "isGraduated"};
+//        String[] includes = Strings.EMPTY_ARRAY;
 //        String[] excludes = Strings.EMPTY_ARRAY;
-        FetchSourceContext fetchSourceContext = new FetchSourceContext(true, includes, excludes);
-        getRequest.fetchSourceContext(fetchSourceContext);
+//        FetchSourceContext fetchSourceContext = new FetchSourceContext(true, includes, excludes);
+//        getRequest.fetchSourceContext(fetchSourceContext);
 
         getRequest.routing("routing");
 
@@ -391,7 +397,7 @@ public class ElasticSearchRESTAPITest {
 
         getRequest.refresh(true);
 
-        getRequest.version(1);
+//        getRequest.version(1);
 
         getRequest.versionType(VersionType.EXTERNAL);
 //        getRequest.id(String.valueOf(67));
@@ -447,7 +453,7 @@ public class ElasticSearchRESTAPITest {
     @Test
     public void deleteRequestTest() {
         RestHighLevelClient esRestClient = getESRestClient();
-        DeleteRequest deleteRequest = new DeleteRequest(INDEX_USER_INFO, DOCUMENT_ID);
+        DeleteRequest deleteRequest = new DeleteRequest(INDEX_CUSTOMER);
         deleteRequest.timeout(TimeValue.timeValueMillis(TIME_OUT));
         deleteRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
 
@@ -764,14 +770,36 @@ public class ElasticSearchRESTAPITest {
         //复制一个索引以及其中的数据，索引不存在就创建，存在则把所有数据复制到新的索引中
         RestHighLevelClient esRestClient = getESRestClient();
         ReindexRequest reindexRequest = new ReindexRequest();
-        reindexRequest.setSourceIndices(INDEX_USER_INFO);
-        reindexRequest.setDestIndex(INDEX_MANAGER_INFO);
-        reindexRequest.setRefresh(true);
+        reindexRequest.setSourceIndices(INDEX_MANAGER);
 
-//        reindexRequest.setDestVersionType(VersionType.INTERNAL);
-//        reindexRequest.setDestOpType("create");
+        RemoteInfo remoteInfo = new RemoteInfo("http",
+                "192.168.43.49",
+                9201,
+                null,
+                new BytesArray(new MatchAllQueryBuilder().toString()),
+                null,
+                null,
+                Collections.emptyMap(),
+                new TimeValue(30, TimeUnit.MINUTES),
+                new TimeValue(30, TimeUnit.MINUTES));
+
+        JSONObject.toJSONString(remoteInfo);
+        //设置远程连接信息
+        reindexRequest.setRemoteInfo(remoteInfo);
+        //设置reindex的目标索引
+        reindexRequest.setDestIndex(INDEX_MANAGER_TEST + "02");
+        //刷新策略
+        reindexRequest.setRefresh(true);
+        //刷新时间
+        reindexRequest.setTimeout(TimeValue.timeValueMinutes(30));
+        //发生版本冲突后的处理方式
+        reindexRequest.setConflicts("proceed");
+        //出现版本冲突的数据处理方式
+        reindexRequest.setDestVersionType(VersionType.EXTERNAL);
+        //数据操作类型
+        reindexRequest.setDestOpType("create");
         try {
-            ActionListener<BulkByScrollResponse> actionListener = new ActionListener<BulkByScrollResponse>() {
+            /*ActionListener<BulkByScrollResponse> actionListener = new ActionListener<BulkByScrollResponse>() {
                 @Override
                 public void onResponse(BulkByScrollResponse bulkByScrollResponse) {
                     List<BulkItemResponse.Failure> bulkFailures = bulkByScrollResponse.getBulkFailures();
@@ -786,14 +814,12 @@ public class ElasticSearchRESTAPITest {
                 public void onFailure(Exception e) {
                     log.info("reindex操作数据失败，捕获异常：{}", e.getMessage());
                 }
-            };
-            Cancellable cancellable = esRestClient.reindexAsync(reindexRequest, requestOptions, actionListener);
+            };*/
 
-            while (true) {
-                if (flag) {
-                    break;
-                }
-            }
+            BulkByScrollResponse bulkByScrollResponse = esRestClient.reindex(reindexRequest, requestOptions);
+            long total = bulkByScrollResponse.getTotal();
+
+            log.info("批量操作的数据量：{}" , total);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -907,7 +933,7 @@ public class ElasticSearchRESTAPITest {
             int count = 0;
             for (SearchHit hit : hits) {
                 Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                log.info(sourceAsMap.toString());
+//                log.info(sourceAsMap.toString());
                 count++;
             }
             log.info("分页查询的结果数据条数：{}", count);
