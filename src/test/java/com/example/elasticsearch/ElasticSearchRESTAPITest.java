@@ -1,10 +1,9 @@
-package com.example;
+package com.example.elasticsearch;
 
 import com.alibaba.fastjson.JSONObject;
 import com.example.demo.model.Product;
 import com.example.demo.utils.CommonUtils;
 import org.apache.http.HttpHost;
-import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -27,7 +26,6 @@ import org.elasticsearch.client.core.*;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -50,7 +48,6 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -939,24 +936,59 @@ public class ElasticSearchRESTAPITest {
             log.info("分页查询的结果数据条数：{}", count);
             Aggregations aggregations = searchResponse.getAggregations();
             Map<String, Aggregation> asMap = aggregations.getAsMap();
-            log.info(asMap.toString());
+//            log.info(asMap.toString());
             Aggregation aggregation = asMap.get("workExperience.level");
-
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    @Test
+    public void docSearchAfterTest(){
+        RestHighLevelClient restHighLevelClient = getESRestClient();
+        SearchRequest searchRequest = new SearchRequest(INDEX_CUSTOMER);
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        searchSourceBuilder.from(0);
+        searchSourceBuilder.size(200);
+        searchSourceBuilder.sort("createTime",SortOrder.DESC);
+
+        searchRequest.source(searchSourceBuilder);
+
+        try {
+            SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+            long value = searchResponse.getHits().getTotalHits().value;
+            SearchHit[] hits = searchResponse.getHits().getHits();
+
+            int pageNum = 0;
+            while (hits.length > 0){
+                Object[] sortValues = hits[hits.length - 1].getSortValues();
+                searchSourceBuilder.searchAfter(sortValues);
+                searchRequest.source(searchSourceBuilder);
+                searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+                SearchHits responseHits = searchResponse.getHits();
+                hits = responseHits.getHits();
+                value = responseHits.getTotalHits().value;
+                pageNum ++;
+                String lastDataId = hits[hits.length - 1].getSourceAsMap().get("id").toString();
+                log.info("the current page number : {} , the last data id : {}" , pageNum , lastDataId);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
     @Test
     public void scrollSearchTest() {
         RestHighLevelClient esRestClient = getESRestClient();
-        SearchRequest searchRequest = new SearchRequest(INDEX_USER_INFO);
+        SearchRequest searchRequest = new SearchRequest(INDEX_CUSTOMER);
 
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 
-        searchSourceBuilder.query(QueryBuilders.matchQuery("userName", "Jhon"));
+//        searchSourceBuilder.query(QueryBuilders.matchQuery("userName", "Jhon"));
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
 
         searchSourceBuilder.size(PAGE_SIZE_MAX);
 

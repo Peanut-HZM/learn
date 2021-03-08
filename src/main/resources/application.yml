@@ -66,4 +66,9 @@ pagehelper:
   params: count=countSql
   helper-dialect: oracle
 
+rocketMq:
+  nameServer:172.32.0.2:9876;172.32.0.3:9876
+  producerGroup:PEANUT_PRODUCER_GROUP
+  consumerGroup:PEANUT_CONSUMER_GROUP
+
 
