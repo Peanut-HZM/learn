@@ -1,0 +1,77 @@
+version: '3'
+services:
+  es-5.5.0-node-0:
+    image: elasticsearch:5.5.0
+    container_name: es-5.5.0-node-0
+    privileged: true
+    environment:
+      - cluster.name=elasticsearch-cluster-5.5.0
+      - node.name=node0
+      - node.master=true
+      - node.data=true
+      - bootstrap.memory_lock=true
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=es-5.5.0-node-0,es-5.5.0-node-1,es-5.5.0-node-2"
+      - "discovery.zen.minimum_master_nodes=2"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./data/node0:/usr/share/elasticsearch/5.5.0/data
+      - ./logs/node0:/usr/share/elasticsearch/5.5.0/logs
+    ports:
+      - 8200:9200
+      - 8300:9300
+  es-5.5.0-node-1:
+    image: elasticsearch:5.5.0
+    container_name: es-5.5.0-node-1
+    privileged: true
+    environment:
+      - cluster.name=elasticsearch-cluster-5.5.0
+      - node.name=node1
+      - node.master=true
+      - node.data=true
+      - bootstrap.memory_lock=true
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=es-5.5.0-node-0,es-5.5.0-node-1,es-5.5.0-node-2"
+      - "discovery.zen.minimum_master_nodes=2"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./data/node1:/usr/share/elasticsearch/5.5.0/data
+      - ./logs/node1:/usr/share/elasticsearch/5.5.0/logs
+    ports:
+      - 8201:9200
+      - 8301:9300
+  es-5.5.0-node-2:
+    image: elasticsearch:5.5.0
+    container_name: es-5.5.0-node-2
+    privileged: true
+    environment:
+      - cluster.name=elasticsearch-cluster-5.5.0
+      - node.name=node2
+      - node.master=true
+      - node.data=true
+      - bootstrap.memory_lock=true
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=es-5.5.0-node-0,es-5.5.0-node-1,es-5.5.0-node-2"
+      - "discovery.zen.minimum_master_nodes=2"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./data/node2:/usr/share/elasticsearch/5.5.0/data
+      - ./logs/node2:/usr/share/elasticsearch/5.5.0/logs
+    ports:
+      - 8202:9200
+      - 8302:9300

@@ -1,0 +1,106 @@
+#docker通过docker-compose.yml文件可批量启动容器，若docker容器新的服务启动导致之前启动的服务意外终止，需要调整docker的配置
+#配置好docker-compose.yml文件后，通过docker-compos up -d 启动容器并后台运行
+#192.168.43.49为docker容器所在服务器的IP，端口号设置也为doker容器在服务区上映射的端口号
+#容器的各个配置都可以在此配置文件中
+version: '3.3'
+services:
+  #启动的容器服务名
+  es-7.7.1-node-1:
+    #要启动的容器服务的镜像，可先通过docke pull的方式把镜像文件拉到本地
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.1
+    #启动的容器的名称
+    container_name: es-7.7.1-node-1
+    #容器对应的服务的配置
+    environment:
+      - cluster.name=es-cluster-7.7.1
+      - node.name=es-7.7.1-node-1
+      - bootstrap.memory_lock=true
+      - "es_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.zen.ping.unicast.hosts=es-7.7.1-node-1,es-7.7.1-node-2,es-7.7.1-node-3
+      - discovery.zen.minimum_master_nodes=1
+      - cluster.initial_master_nodes=es-7.7.1-node-1
+      - xpack.security.enabled=false
+      - network.host=0.0.0.0
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - reindex.remote.whitelist=192.168.43.49:9201,192.168.43.49:9202,192.168.43.49:9203
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    #服务的存储的文件路径
+    volumes:
+      - es7data1:/Users/peanut/Documents/docker/elasticsearch/7.7.1/data/es-7.7.1-node-1
+    #端口映射
+    ports:
+      - 8201:9200
+      - 8301:9300
+    #所属网络
+    networks:
+      - es7net
+  es-7.7.1-node-2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.1
+    container_name: es-7.7.1-node-2
+    environment:
+      - cluster.name=es-cluster-7.7.1
+      - node.name=es-7.7.1-node-2
+      - bootstrap.memory_lock=true
+      - "es_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.zen.ping.unicast.hosts=es-7.7.1-node-1,es-7.7.1-node-2,es-7.7.1-node-3
+      - discovery.zen.minimum_master_nodes=1
+      - cluster.initial_master_nodes=es-7.7.1-node-1
+      - xpack.security.enabled=false
+      - network.host=0.0.0.0
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - reindex.remote.whitelist=192.168.43.49:9201,192.168.43.49:9202,192.168.43.49:9203
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es7data2:/Users/peanut/Documents/docker/elasticsearch/7.7.1/data/es-7.7.1-node-2
+    ports:
+      - 8202:9200
+      - 8302:9300
+    networks:
+      - es7net
+  es-7.7.1-node-3:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.1
+    container_name: es-7.7.1-node-3
+    environment:
+      - cluster.name=es-cluster-7.7.1
+      - node.name=es-7.7.1-node-3
+      - bootstrap.memory_lock=true
+      - "es_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.zen.ping.unicast.hosts=es-7.7.1-node-1,es-7.7.1-node-2,es-7.7.1-node-3
+      - cluster.initial_master_nodes=es-7.7.1-node-1
+      - xpack.security.enabled=false
+      - network.host=0.0.0.0
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - reindex.remote.whitelist=192.168.43.49:9201,192.168.43.49:9202,192.168.43.49:9203
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es7data3:/Users/peanut/Documents/docker/elasticsearch/7.7.1/data/es-7.7.1-node-3
+    ports:
+      - 8203:9200
+      - 8303:9300
+    networks:
+      - es7net
+
+#文件挂载配置
+volumes:
+  es7data1:
+    driver: local
+  es7data2:
+    driver: local
+  es7data3:
+    driver: local
+#容器网络配置
+networks:
+  es7net:
+    driver: bridge

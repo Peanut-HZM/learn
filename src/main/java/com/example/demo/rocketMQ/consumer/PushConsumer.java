@@ -21,7 +21,7 @@ import java.util.List;
  * @week 星期五
  **/
 
-public class Consumer extends DefaultMQPushConsumer {
+public class PushConsumer extends DefaultMQPushConsumer {
 
     private static DefaultMQPushConsumer consumer;
 
@@ -49,7 +49,7 @@ public class Consumer extends DefaultMQPushConsumer {
         return consumer;
     }
 
-    public Consumer() throws MQClientException {
+    public PushConsumer() throws MQClientException {
         //注册消费的监听，在监听中消费消息，并返回消息消费的状态
         getConsumer().registerMessageListener((MessageListenerConcurrently) (msgs , content) -> {
             try {
@@ -90,12 +90,12 @@ public class Consumer extends DefaultMQPushConsumer {
                     System.out.println("消费者监听：" + context);
                     for (Message msg : msgs) {
                         String topic = msg.getTopic();
-                        System.out.println("消费的消息的topic" + topic);
+                        System.out.println("消费的消息的topic：" + topic);
                         String tags = msg.getTags();
-                        System.out.println("消费的消息的tags" + tags);
+                        System.out.println("消费的消息的tags：" + tags);
                         byte[] body = msg.getBody();
                         String msgBody = new String(body, StandardCharsets.UTF_8);
-                        System.out.println("消费的消息的msgBody" + msgBody);
+                        System.out.println("消费的消息的msgBody：" + msgBody);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

@@ -1,0 +1,42 @@
+version: '3.3'
+services:
+  kibana-7:
+    image: docker.elastic.co/kibana/kibana:7.7.1
+    container_name: kibana-7
+    environment:
+#      - I18N_LOCALE=zh-CN
+ #     - XPACK_GRAPH_ENABLED=true
+  #    - TIMELION_ENABLED=true
+   #   - XPACK_MONITORING_COLLECTION_ENABLED=true
+      - ELASTICSEARCH_URL=http://192.168.43.49:8201
+      - SERVER_HOST=127.0.0.1
+      - SERVER_PORT=5601
+      - SERVER_NAME=kibana-7
+    ports:
+      - 5602:5601
+    networks:
+      - es7net
+
+  kibana-5:
+    image: docker.elastic.co/kibana/kibana:5.5.0
+    container_name: kibana-5
+    environment:
+#      - I18N_LOCALE=zh-CN
+#      - XPACK_GRAPH_ENABLED=true
+#      - TIMELION_ENABLED=true
+#      - XPACK_MONITORING_COLLECTION_ENABLED=true
+      - ELASTICSEARCH_URL=http://192.168.43.49:9201
+      - SERVER_HOST=127.0.0.1
+      - SERVER_PORT=5601
+      - SERVER_NAME=kibana-5
+    ports:
+      - 5601:5601
+    networks:
+      - es5net
+
+
+networks:
+  es5net:
+    driver: bridge
+  es7net:
+    driver: bridge

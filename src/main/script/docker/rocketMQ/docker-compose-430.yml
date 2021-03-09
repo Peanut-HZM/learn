@@ -1,0 +1,183 @@
+# 指定 compose 文件的版本
+# 生成的openVPN倒数第二行需要添加 192.168.80.3，否则无法ping通容器
+version: '3.5'
+# 定义所有的 service 信息, services 下面的第一级别的 key 既是一个 service 的名称
+services:
+  #自定义服务名称
+  namesrv-peanut-a:
+    # 指定 docker 镜像, 可以是远程仓库镜像、本地镜像
+    image: rocketmqinc/rocketmq:4.3.0
+    container_name: namesrv-peanut-a
+    #建立宿主机和容器之间的端口映射关系, ports 支持两种语法格式
+    ports:
+      - 9976:9876     
+    # 定义容器和宿主机的卷映射关系, 其和 networks 一样可以位于 services 键的二级键和 compose 顶级键, 如果需要跨服务间使用则在顶级键定义, 在 services 中引用
+    volumes:
+      - /Users/peanut/software/RocketMQ/logs/nameserver-a:/opt/logs
+      - /Users/peanut/software/RocketMQ/store/nameserver-a:/opt/store
+    # 覆盖容器启动后默认执行的命令
+    command: sh mqnamesrv
+    # 定义 networks 信息
+    networks:
+      rocketMQ-net:
+        ipv4_address: 172.32.0.12
+
+  namesrv-peanut-b:
+    image: rocketmqinc/rocketmq:4.3.0
+    container_name: namesrv-peanut-b
+    ports:
+      - 9977:9876
+    volumes:
+      - /Users/peanut/software/RocketMQ/logs/nameserver-b:/opt/logs
+      - /Users/peanut/software/RocketMQ/store/nameserver-b:/opt/store
+    command: sh mqnamesrv
+    networks:
+      rocketMQ-net:
+        ipv4_address: 172.32.0.13
+
+  broker-a:
+    image: rocketmqinc/rocketmq:4.3.0
+    container_name: broker-peanuta
+    ports:
+      - 11923:10911
+      - 11924:10909
+    volumes:
+      - /Users/peanut/software/RocketMQ/logs/broker-a:/opt/logs
+      - /Users/peanut/software/RocketMQ/store/broker-a:/opt/store
+      - /Users/peanut/software/RocketMQ/config/broker-a.conf:/opt/rocketmq-4.3.0/conf/broker-a.conf 
+    environment:
+        # 指定堆内存大小    https://blog.csdn.net/qq_35529258/article/details/112544700
+        MAX_POSSIBLE_HEAP: 268435456
+        TZ: Asia/Shanghai
+        NAMESRV_ADDR: "172.32.0.12:9876;172.32.0.13:9876"
+        JAVA_OPTS: " -Duser.home=/opt"
+        JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn256m"
+    command: sh mqbroker -c /opt/rocketmq-4.3.0/conf/broker-a.conf autoCreateTopicEnable=true &
+    # 链接到其它服务中的容器, 该选项是 docker 历史遗留的选项, 目前已被用户自定义网络名称空间取代, 最终有可能被废弃 (在使用 swarm 部署时将忽略该选项)
+    links:
+      - namesrv-peanut-a
+      - namesrv-peanut-b
+    # 通过depends_on来标记依赖关系, 当namesrv-peanut-b服务启动完成后, 才会启动该服务;
+    depends_on:
+      - namesrv-peanut-a
+    networks:
+      rocketMQ-net:
+        ipv4_address: 172.32.0.14
+
+  broker-a-s:
+    image: rocketmqinc/rocketmq:4.3.0
+    container_name: broker-peanuta-s
+    ports:
+      - 11925:10911
+      - 11926:10909
+    volumes:
+      - /Users/peanut/software/RocketMQ/logs/broker-a-s:/opt/logs
+      - /Users/peanut/software/RocketMQ/store/broker-a-s:/opt/store
+      - /Users/peanut/software/RocketMQ/config/broker-a-s.conf:/opt/rocketmq-4.3.0/conf/broker-a-s.conf 
+    environment:
+        # 指定堆内存大小    https://blog.csdn.net/qq_35529258/article/details/112544700
+        MAX_POSSIBLE_HEAP: 268435456
+        TZ: Asia/Shanghai
+        NAMESRV_ADDR: "172.32.0.12:9876;172.32.0.13:9876"
+        JAVA_OPTS: " -Duser.home=/opt"
+        JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn256m"
+    command: sh mqbroker -c /opt/rocketmq-4.3.0/conf/broker-a-s.conf autoCreateTopicEnable=true &
+    # 链接到其它服务中的容器, 该选项是 docker 历史遗留的选项, 目前已被用户自定义网络名称空间取代, 最终有可能被废弃 (在使用 swarm 部署时将忽略该选项)
+    links:
+      - namesrv-peanut-a
+      - namesrv-peanut-b
+    # 通过depends_on来标记依赖关系, 当namesrv-peanut-b服务启动完成后, 才会启动该服务;
+    depends_on:
+      - namesrv-peanut-a
+    networks:
+      rocketMQ-net:
+        ipv4_address: 172.32.0.15
+
+  broker-b:
+    image: rocketmqinc/rocketmq:4.3.0
+    container_name: broker-peanutb
+    ports:
+      - 11921:10911
+      - 11929:10909
+    volumes:
+      - /Users/peanut/software/RocketMQ/logs/broker-b:/opt/logs
+      - /Users/peanut/software/RocketMQ/store/broker-b:/opt/store
+      - /Users/peanut/software/RocketMQ/config/broker-b.conf:/opt/rocketmq-4.3.0/conf/broker-b.conf 
+    # 设置环境变量， environment 的值可以覆盖 env_file 的值 (等同于 docker run --env 的作用)
+    environment:
+      # 指定堆内存大小    https://blog.csdn.net/qq_35529258/article/details/112544700
+        MAX_POSSIBLE_HEAP: 268435456
+        TZ: Asia/Shanghai
+        NAMESRV_ADDR: "172.32.0.12:9876;172.32.0.13:9876"
+        JAVA_OPTS: " -Duser.home=/opt"
+        JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn256m"
+    command: sh mqbroker -c /opt/rocketmq-4.3.0/conf/broker-b.conf autoCreateTopicEnable=true &
+    # 链接到其它服务中的容器, 该选项是 docker 历史遗留的选项, 目前已被用户自定义网络名称空间取代, 最终有可能被废弃 (在使用 swarm 部署时将忽略该选项)
+    links:
+      - namesrv-peanut-a
+      - namesrv-peanut-b
+    # 通过depends_on来标记依赖关系, 当namesrv-peanut-b服务启动完成后, 才会启动该服务;
+    depends_on:
+      - namesrv-peanut-b
+    networks:
+      rocketMQ-net:
+        ipv4_address: 172.32.0.16
+
+  broker-b-s:
+    image: rocketmqinc/rocketmq:4.3.0
+    container_name: broker-peanutb-s
+    ports:
+      - 11922:10911
+      - 11920:10909
+    volumes:
+      - /Users/peanut/software/RocketMQ/logs/broker-b-s:/opt/logs
+      - /Users/peanut/software/RocketMQ/store/broker-b-s:/opt/store
+      - /Users/peanut/software/RocketMQ/config/broker-b-s.conf:/opt/rocketmq-4.3.0/conf/broker-b-s.conf 
+    environment:
+      # 指定堆内存大小    https://blog.csdn.net/qq_35529258/article/details/112544700
+        MAX_POSSIBLE_HEAP: 268435456
+        TZ: Asia/Shanghai
+        NAMESRV_ADDR: "172.32.0.12:9876;172.32.0.13:9876"
+        JAVA_OPTS: " -Duser.home=/opt"
+        JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn256m"
+    command: sh mqbroker -c /opt/rocketmq-4.3.0/conf/broker-b-s.conf autoCreateTopicEnable=true &
+    # 链接到其它服务中的容器, 该选项是 docker 历史遗留的选项, 目前已被用户自定义网络名称空间取代, 最终有可能被废弃 (在使用 swarm 部署时将忽略该选项)
+    links:
+      - namesrv-peanut-a
+      - namesrv-peanut-b
+    # 通过depends_on来标记依赖关系, 当namesrv-peanut-b服务启动完成后, 才会启动该服务;
+    depends_on:
+      - namesrv-peanut-b
+    networks:
+      rocketMQ-net:
+        ipv4_address: 172.32.0.17
+
+  rocketmq-console:
+    image: styletang/rocketmq-console-ng
+    container_name: rocketmq-console-peanut
+    ports:
+      - 8090:8080
+    environment:
+        JAVA_OPTS: -Drocketmq.namesrv.addr=172.32.0.12:9876;172.32.0.13:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+    networks:
+      rocketMQ-net:
+        ipv4_address: 172.32.0.18
+
+volumes:
+  log:
+    driver: local
+  data:
+    driver: local
+  broker-a:
+    driver: local
+  broker-b:
+    driver: local
+  broker-a-s:
+    driver: local
+  broker-b-s:
+    driver: local
+
+
+networks:
+  rocketMQ-net:
+    external: true
